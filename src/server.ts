@@ -37,6 +37,70 @@ fastify.get("/", async(req, res) => {
     return "Welcome to nimuS.";
 })
 
+fastify.get("/stream", async(req, res) => {
+    const magnet = core.decrypt(req.query["magnet"]);
+
+    const range = req.headers.range ? req.headers.range : "bytes=0-50, 100-150";
+
+    if (!range) {
+        res.type("application/json").code(416);
+        return { error: "Wrong range" };
+    }
+
+    const torStream = await core.streamTorrent(magnet, range, core.decrypt(req.query["file"])).catch((err) => {
+        res.type("application/json").code(500);
+        return { error: err };
+    });
+    return torStream;
+});
+
+fastify.get("/search/:query", async(req, res) => {
+    const query = req.params["query"];
+    if (!query) {
+        res.type("application/json").code(400);
+        return { error: "No query provided." };
+    }
+    const results = await core.search(query);
+    res.type("application/json").code(200);
+    return results;
+});
+
+fastify.post("/search", async(req, res) => {
+    const query = req.body["query"];
+    if (!query) {
+        res.type("application/json").code(400);
+        return { error: "No query provided." };
+    }
+    const results = await core.search(query);
+    res.type("application/json").code(200);
+    return results;
+});
+
+fastify.get("/files/:magnet", async(req, res) => {
+    const magnet = core.decrypt(req.params["magnet"]);
+    if (!magnet) {
+        res.type("application/json").code(400);
+        return { error: "No magnet provided." };
+    }
+
+    const files = await core.getFiles(magnet);
+    res.type("application/json").code(200);
+    return files;
+});
+
+fastify.post("/files", async(req, res) => {
+    const magnet = core.decrypt(req.body["magnet"]);
+    if (!magnet) {
+        res.type("application/json").code(400);
+        return { error: "No magnet provided." };
+    }
+
+    const files = await core.getFiles(magnet);
+    res.type("application/json").code(200);
+    return files;
+});
+
+// For testing purposes
 fastify.get("/test", async(req, res) => {
     const stream = createReadStream(join(__dirname, "../src/testing/index.html"), "utf-8");
     res.type("text/html").code(200);
@@ -48,21 +112,6 @@ fastify.get("/cryptojs", async(req, res) => {
     res.type("text/javascript").code(200);
     return stream;
 })
-
-fastify.get("/stream", async(req, res) => {
-    const magnet = core.decrypt(req.query["magnet"]);
-
-    const range = req.headers.range ? req.headers.range : "bytes=0-50, 100-150";
-
-    if (!range) {
-        res.type("application/json").code(416);
-        return { error: "Wrong range" };
-    }
-
-    console.log("Now streaming with range " + range)
-    const torStream = await core.streamTorrent(magnet, range, core.decrypt(req.query["file"]));
-    return torStream;
-});
 
 Promise.all(fastifyPlugins).then(() => {
     fastify.listen({ port: config.web_server.port }, (err, address) => {

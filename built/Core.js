@@ -43,23 +43,23 @@ class Core extends API_1.default {
         return response;
     }
     async getFiles(magnet) {
-        return new Promise((resolve, reject) => {
-            this.client.add(magnet, (torrent) => {
-                let files = [];
-                torrent.files.forEach(function (data) {
-                    files.push({
-                        name: data.name,
-                        length: data.length,
-                    });
-                });
-                resolve(files);
+        let torrent = this.getTorrent(magnet);
+        if (!torrent) {
+            torrent = await this.addTorrent(magnet);
+        }
+        let files = [];
+        torrent.files.forEach(function (data) {
+            files.push({
+                name: data.name,
+                length: data.length,
             });
         });
+        return files;
     }
     getTorrent(magnet) {
         return this.client.get(magnet);
     }
-    async addMagnet(magnet) {
+    async addTorrent(magnet) {
         return new Promise((resolve, reject) => {
             this.client.add(magnet, (torrent) => {
                 resolve(torrent);
@@ -70,17 +70,21 @@ class Core extends API_1.default {
         return new Promise(async (resolve, reject) => {
             let torrent = this.client.get(magnet);
             if (!torrent) {
-                torrent = await this.addMagnet(magnet);
+                torrent = await this.addTorrent(magnet);
             }
             if (!torrent.files) {
-                console.log(torrent);
-                reject("No files found!");
+                reject({ error: "No files found." });
+                return;
             }
-            let file = {};
+            let file = null;
             for (let i = 0; i < torrent.files.length; i++) {
                 if (torrent.files[i].name == fileName) {
                     file = torrent.files[i];
                 }
+            }
+            if (!file) {
+                reject({ error: "File not found." });
+                return;
             }
             let positions = range.replace(/bytes=/, "").split("-");
             let start = parseInt(positions[0], 10);

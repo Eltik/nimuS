@@ -2,9 +2,33 @@
 <!DOCTYPE HTML>
 <html>
     <head>
-        <title>My First HTML Page</title>
+        <title>nimuS Playground</title>
         <script src="./cryptojs"></script>
     </head>
+    <style>
+        table {
+            font-family: Arial, Helvetica, sans-serif;
+            border-collapse: collapse;
+            width: 100%;
+        }
+
+        table td, table th {
+            border: 1px solid #ddd;
+            padding: 8px;
+        }
+
+        table tr:nth-child(even){background-color: #f2f2f2;}
+
+        table tr:hover {background-color: rgb(209, 208, 208);}
+
+        table th {
+            padding-top: 12px;
+            padding-bottom: 12px;
+            text-align: left;
+            background-color: #cb7171;
+            color: white;
+        }
+    </style>
     <body>
         <script>
             var Base64 = {
@@ -124,10 +148,12 @@
                 return decodedString;
             }
 
-            function createHLS() {
+            function createHLS(magnet, fileName) {
                 const hlsScript = document.createElement("script");
                 hlsScript.src = "https://cdn.jsdelivr.net/npm/hls.js@latest/dist/hls.min.js"
                 document.getElementsByTagName("body")[0].append(hlsScript);
+
+                const url = `/stream?magnet=${encrypt(magnet)}&file=${encrypt(fileName)}`;
 
                 setTimeout(() => {
                     setTimeout(() => {
@@ -141,7 +167,7 @@
 
                         if (Hls.isSupported()) {
                             hls = new Hls();
-                            hls.loadSource(sources[sources.length - 1].url);
+                            hls.loadSource(url);
                             hls.attachMedia(video);
 
                             hls.on(Hls.Events.MANIFEST_PARSED,function() {
@@ -155,13 +181,14 @@
                                 }
                             });
                         } else {
-                            video.src = sources[sources.length - 1].url;
+                            video.src = url;
                         }
                     }, 1000);
                 }, 200);
             }
 
-            function createVideo() {
+            function createVideo(magnet, fileName) {
+                const url = `/stream?magnet=${encrypt(magnet)}&file=${encrypt(fileName)}`;
                 const div = document.createElement("div");
                 div.id = "video_wrap";
                 document.getElementsByTagName("body")[0].append(div);
@@ -170,25 +197,184 @@
                 video.controls = true;
                 document.getElementById("video_wrap").append(video);
 
-                video.src = sources[sources.length - 1].url;
+                video.src = url;
 
                 document.body.append(div);
             }
+
+            async function search() {
+                const input = document.getElementById("search");
+                document.getElementById("search_button").disabled = true;
+
+                const req = await fetch(`/search`, { body: JSON.stringify({ query: input.value }), method: "POST", headers: { "Content-Type": "application/json" }});
+                const data = await req.json();
+
+                document.getElementById("search_button").disabled = false;
+
+                const table = document.getElementById("results");
+                const tr = document.querySelectorAll("tr");
+                for (let i = 0; i < tr.length; i++) {
+                    const possible = document.querySelectorAll("tr")[i];
+                    if (possible && possible.querySelector("td")) {
+                        possible.remove();
+                    }
+                }
+
+                data.map((element, index) => {
+                    const aniList = element.anilist;
+                    const nyaa = element.nyaa;
+
+                    const tr = document.createElement("tr");
+
+                    const title = document.createElement("td");
+                    title.textContent = aniList.title.english;
+
+                    const romaji = document.createElement("td");
+                    romaji.textContent = aniList.title.romaji;
+
+                    const native = document.createElement("td");
+                    native.textContent = aniList.title.native;
+
+                    const nyaaTitle = document.createElement("td");
+                    nyaaTitle.textContent = nyaa.title;
+
+                    const link = document.createElement("td");
+                    const href = document.createElement("a");
+                    href.href = "https://nyaa.si" + nyaa.link;
+                    link.append(href);
+
+                    const date = document.createElement("td");
+                    date.textContent = nyaa.date;
+
+                    const seeders = document.createElement("td");
+                    seeders.textContent = nyaa.seeders;
+
+                    const leechers = document.createElement("td");
+                    leechers.textContent = nyaa.leechers;
+
+                    const size = document.createElement("td");
+                    size.textContent = nyaa.size;
+
+                    const magnet = document.createElement("td");
+                    const magnetLink = document.createElement("a");
+                    magnetLink.href = nyaa.magnet;
+                    magnetLink.textContent = "Magnet";
+                    magnet.append(magnetLink);
+
+                    const torrent = document.createElement("td");
+                    const torrentLink = document.createElement("a");
+                    torrentLink.href = "https://nyaa.si" + nyaa.torrent;
+                    torrentLink.textContent = "Torrent";
+                    torrent.append(torrentLink);
+
+                    const selectButton = document.createElement("button");
+                    selectButton.onclick = function() {
+                        document.querySelector(".info h2").textContent = "Selecting Torrent...";
+                        select(nyaa.magnet).then(() => {
+                            document.querySelector(".info h2").textContent = aniList.title.english ? aniList.title.english : aniList.title.romaji;
+                        });
+                    }
+                    selectButton.textContent = "Select Torrent";
+
+                    tr.append(title);
+                    tr.append(romaji);
+                    tr.append(native);
+                    tr.append(nyaaTitle);
+                    tr.append(link);
+                    tr.append(date);
+                    tr.append(seeders);
+                    tr.append(leechers);
+                    tr.append(size);
+                    tr.append(magnet);
+                    tr.append(torrent);
+                    tr.append(selectButton);
+
+                    table.append(tr);
+                })
+            }
+
+            async function select(magnet) {
+                const req = await fetch(`/files`, { body: JSON.stringify({ magnet: encrypt(magnet) }), method: "POST", headers: { "Content-Type": "application/json" }});
+                const data = await req.json();
+
+                document.querySelectorAll("li").forEach((element) => {
+                    element.remove();
+                });
+
+                const list = document.querySelector(".info ul");
+                data.map((element, index) => {
+                    const li = document.createElement("li");
+                    
+                    const item = document.createElement("div");
+                    const anchor = document.createElement("a");
+                    anchor.textContent = element.name;
+                    anchor.href = "#" + element.name;
+                    anchor.onclick = function() {
+                        console.log("Streaming " + element.name + "...");
+                        createVideo(magnet, element.name);
+                    }
+                    item.append(anchor);
+
+                    li.append(item);
+                    list.append(li);
+                })
+            }
         </script>
         </script>
-        <button type="button" onclick="createHLS()">Create HLS</button>
-        <button type="button" onclick="createVideo()">Create Video</button>
+        <div class="content">
+            <input type="search" placeholder="Search..." id="search" />
+            <button type="button" onclick="search()" id="search_button">Search</button>
+            <div class="results">
+                <table id="results">
+                    <tr>
+                        <th>Title</th>
+                        <th>Romaji</th>
+                        <th>Native</th>
+                        <th>Title (Nyaa)</th>
+                        <th>Link</th>
+                        <th>Date Uploaded</th>
+                        <th>Seeders</th>
+                        <th>Leechers</th>
+                        <th>Torrent Size</th>
+                        <th>Magnet</th>
+                        <th>Torrent</th>
+                        <th>Select</th>
+                    </tr>
+                    <tr id="temp">
+                        <td>No results yet!</td>
+                        <td></td>
+                        <td></td>
+                        <td></td>
+                        <td></td>
+                        <td></td>
+                        <td></td>
+                        <td></td>
+                        <td></td>
+                        <td></td>
+                        <td></td>
+                        <td></td>
+                    </tr>
+                </table>
+            </div>
+            <div class="info">
+                <h2>No Torrent Selected</h2>
+                <ul>
+                </ul>
+            </div>
+            <!--
+                <button type="button" onclick="createHLS()">Create HLS</button>
+                <button type="button" onclick="createVideo()">Create Video</button>
+            -->
+        </div>
         <script>
-            const sources = [
+            // Testing sources.
+            let sources = [
                 {
                     "url": `/stream?magnet=${encrypt("magnet:?xt=urn:btih:ad9918214a5cfd8464f031e2c3c86675a700a8c8&dn=Gosick%20%20%5BDual%20Audio%5D%20%5BHEVC%5D%20%5B10-bit%5D%20%5BBDRip%5D%20%5BHD%201080p%5D%20%5Bbluury%5D&tr=http%3A%2F%2Fnyaa.tracker.wf%3A7777%2Fannounce&tr=udp%3A%2F%2Fopen.stealth.si%3A80%2Fannounce&tr=udp%3A%2F%2Ftracker.opentrackr.org%3A1337%2Fannounce&tr=udp%3A%2F%2Fexodus.desync.com%3A6969%2Fannounce&tr=udp%3A%2F%2Ftracker.torrent.eu.org%3A451%2Fannounce")}/&file=${encrypt("Gosick 01 The Dark Reaper Finds the Golden Fairy.mkv")}`,
                     "quality": "1080p",
                     "isM3U8": true
                 }
             ];
-
-            const opStart = 0;
-            const opEnd = 0;
         </script>
     </body>
 </html>

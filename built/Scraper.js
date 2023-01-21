@@ -25,8 +25,8 @@ class Scraper extends API_1.default {
             const seeders = $(a).eq(i).find("td").eq(5).text();
             const leechers = $(a).eq(i).find("td").eq(6).text();
             const date = $(a).eq(i).find("td").eq(4).text();
-            const magnet = $(a).eq(i).find("td").eq(2).find("a").eq(0).attr("href");
-            const torrent = $(a).eq(i).find("td").eq(2).find("a").eq(1).attr("href");
+            const torrent = $(a).eq(i).find("td").eq(2).find("a").eq(0).attr("href");
+            const magnet = $(a).eq(i).find("td").eq(2).find("a").eq(1).attr("href");
             data.push({
                 title,
                 link,
