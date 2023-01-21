@@ -1,11 +1,13 @@
 import { sync, Media } from "anisync-core";
 import AniList, { Type } from "./AniList";
+import WebTorrent from "webtorrent";
 
 import API from "./API";
 import Scraper from "./Scraper";
 
 export default class Core extends API {
     private aniList = new AniList(Type.ANIME);
+    private client:WebTorrent = new WebTorrent();
 
     constructor() {
         super();
@@ -41,6 +43,56 @@ export default class Core extends API {
             }
         })
         return response;
+    }
+
+    public async getFiles(magnet:string):Promise<Array<{name:string, length:number}>> {
+        return new Promise((resolve, reject) => {
+            this.client.add(magnet, (torrent) => {
+                let files = [];
+                torrent.files.forEach(function (data) {
+                    files.push({
+                        name: data.name,
+                        length: data.length,
+                    });
+                });
+                resolve(files);
+            });
+        })
+    }
+
+    public async streamTorrent(magnet:string, range:string, fileName:string):Promise<Buffer> {
+        return new Promise((resolve, reject) => {
+            this.client.add(magnet, (torrent) => {
+                let file:any = {};
+                for (let i = 0; i < torrent.files.length; i++) {
+                    if (torrent.files[i].name == fileName) {
+                        file = torrent.files[i];
+                    }
+                }
+
+                let positions = range.replace(/bytes=/, "").split("-");
+
+                let start = parseInt(positions[0], 10);
+
+                let file_size = file.length;
+
+                let end = positions[1] ? parseInt(positions[1], 10) : file_size - 1;
+
+                let stream_position = {
+                    start: start,
+                    end: end
+                }
+                
+                let stream = file.createReadStream(stream_position);
+                let buffer = Buffer.alloc(0);
+                stream.on("data", (chunk) => {
+                    buffer = Buffer.concat([buffer, chunk]);
+                });
+                stream.on("end", () => {
+                    resolve(buffer);
+                });
+            });
+        });
     }
 
     // Basic stream code
