@@ -84,6 +84,16 @@ fastify.post("/files", async (req, res) => {
     res.type("application/json").code(200);
     return files;
 });
+fastify.get("/list", async (req, res) => {
+    const files = await core.listTorrents();
+    res.type("application/json").code(200);
+    return files;
+});
+fastify.post("/list", async (req, res) => {
+    const files = await core.listTorrents();
+    res.type("application/json").code(200);
+    return files;
+});
 // For testing purposes
 fastify.get("/test", async (req, res) => {
     const stream = (0, fs_1.createReadStream)((0, path_1.join)(__dirname, "../src/testing/index.html"), "utf-8");

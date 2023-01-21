@@ -15,7 +15,7 @@ export default class Core extends API {
         super();
     }
 
-    public async search(query:string, stringThreshold:number = 0.5, comparisonThreshold:number = 0.5):Promise<Array<SearchResponse>> {
+    public async search(query:string, stringThreshold:number = 0.25, comparisonThreshold:number = 0.25):Promise<Array<SearchResponse>> {
         const response:SearchResponse[] = [];
 
         const aniSearch = await this.aniList.search(query);
@@ -64,6 +64,42 @@ export default class Core extends API {
 
     public getTorrent(magnet:string) {
         return this.client.get(magnet);
+    }
+
+    public listTorrents() {
+        const torrents = this.client.torrents;
+        const results = [];
+        torrents.map((element, index) => {
+            const announce = element.announce;
+            const path = element.path;
+            const files = element.files;
+
+            const fileResult = [];
+            files.map((file, index) => {
+                const name = file.name;
+                const path = file.path;
+                const length = file.length;
+
+                fileResult.push({
+                    name: name,
+                    path: path,
+                    length: length
+                });
+            })
+            const totalLength = element.length;
+            const name = element.name;
+            const infoHash = element.infoHash;
+
+            results.push({
+                name: name,
+                hash: infoHash,
+                length: totalLength,
+                announcers: announce,
+                file_path: path,
+                files: fileResult
+            })
+        })
+        return results;
     }
 
     public async addTorrent(magnet:string) {

@@ -159,7 +159,7 @@
                     setTimeout(() => {
                         const div = document.createElement("div");
                         div.id = "video_wrap";
-                        document.getElementsByTagName("body")[0].append(div);
+                        document.querySelector(".video_wrapper").append(div);
                         
                         const video = document.createElement("video");
                         video.controls = true;
@@ -199,7 +199,7 @@
 
                 video.src = url;
 
-                document.body.append(div);
+                document.querySelector(".video_wrapper").append(div);
             }
 
             async function search() {
@@ -212,12 +212,9 @@
                 document.getElementById("search_button").disabled = false;
 
                 const table = document.getElementById("results");
-                const tr = document.querySelectorAll("tr");
+                const tr = document.querySelectorAll(".item");
                 for (let i = 0; i < tr.length; i++) {
-                    const possible = document.querySelectorAll("tr")[i];
-                    if (possible && possible.querySelector("td")) {
-                        possible.remove();
-                    }
+                    tr[i].remove()
                 }
 
                 data.map((element, index) => {
@@ -225,6 +222,7 @@
                     const nyaa = element.nyaa;
 
                     const tr = document.createElement("tr");
+                    tr.className = "item";
 
                     const title = document.createElement("td");
                     title.textContent = aniList.title.english;
@@ -241,6 +239,7 @@
                     const link = document.createElement("td");
                     const href = document.createElement("a");
                     href.href = "https://nyaa.si" + nyaa.link;
+                    href.textContent = "Nyaa";
                     link.append(href);
 
                     const date = document.createElement("td");
@@ -311,6 +310,9 @@
                     anchor.href = "#" + element.name;
                     anchor.onclick = function() {
                         console.log("Streaming " + element.name + "...");
+                        document.querySelectorAll("video").forEach((element) => {
+                            element.remove();
+                        });
                         createVideo(magnet, element.name);
                     }
                     item.append(anchor);
@@ -319,11 +321,76 @@
                     list.append(li);
                 })
             }
+
+            async function list() {
+                const button = document.querySelector("#list_button");
+                button.disabled = true;
+
+                const req = await fetch("/list");
+                const data = await req.json();
+                console.log(data);
+
+                button.disabled = false;
+                
+                const table = document.getElementById("torrents");
+                const tr = document.querySelectorAll("#torrents .item");
+                for (let i = 0; i < tr.length; i++) {
+                    tr[i].remove()
+                }
+
+                data.map((element, index) => {
+                    const tr = document.createElement("tr");
+                    tr.className = "item";
+
+                    const title = document.createElement("td");
+                    title.textContent = element.name;
+
+                    const length = document.createElement("td");
+                    length.textContent = element.length;
+
+                    const hash = document.createElement("td");
+                    hash.textContent = element.hash;
+
+                    const files = document.createElement("td");
+                    files.textContent = element.files.length + " files";
+
+                    const path = document.createElement("td");
+                    path.textContent = element.file_path + "/" + element.name;
+
+                    const announcers = document.createElement("td");
+                    announcers.textContent = element.announcers.length + " announcers";
+
+                    tr.append(title);
+                    tr.append(length);
+                    tr.append(hash);
+                    tr.append(files);
+                    tr.append(path);
+                    tr.append(announcers);
+
+                    table.append(tr);
+                })
+            }
         </script>
         </script>
         <div class="content">
             <input type="search" placeholder="Search..." id="search" />
             <button type="button" onclick="search()" id="search_button">Search</button>
+            <button type="button" onclick="list()" id="list_button">List Torrents</button>
+            <div class="video_wrapper">
+
+            </div>
+            <div class="torrents">
+                <table id="torrents">
+                    <tr>
+                        <th>Title</th>
+                        <th>Length</th>
+                        <th>Hash</th>
+                        <th>Files</th>
+                        <th>Torrent Path</th>
+                        <th>Announcers</th>
+                    </tr>
+                </table>
+            </div>
             <div class="results">
                 <table id="results">
                     <tr>
@@ -340,7 +407,7 @@
                         <th>Torrent</th>
                         <th>Select</th>
                     </tr>
-                    <tr id="temp">
+                    <tr id="temp" class="item">
                         <td>No results yet!</td>
                         <td></td>
                         <td></td>
@@ -361,20 +428,6 @@
                 <ul>
                 </ul>
             </div>
-            <!--
-                <button type="button" onclick="createHLS()">Create HLS</button>
-                <button type="button" onclick="createVideo()">Create Video</button>
-            -->
         </div>
-        <script>
-            // Testing sources.
-            let sources = [
-                {
-                    "url": `/stream?magnet=${encrypt("magnet:?xt=urn:btih:ad9918214a5cfd8464f031e2c3c86675a700a8c8&dn=Gosick%20%20%5BDual%20Audio%5D%20%5BHEVC%5D%20%5B10-bit%5D%20%5BBDRip%5D%20%5BHD%201080p%5D%20%5Bbluury%5D&tr=http%3A%2F%2Fnyaa.tracker.wf%3A7777%2Fannounce&tr=udp%3A%2F%2Fopen.stealth.si%3A80%2Fannounce&tr=udp%3A%2F%2Ftracker.opentrackr.org%3A1337%2Fannounce&tr=udp%3A%2F%2Fexodus.desync.com%3A6969%2Fannounce&tr=udp%3A%2F%2Ftracker.torrent.eu.org%3A451%2Fannounce")}/&file=${encrypt("Gosick 01 The Dark Reaper Finds the Golden Fairy.mkv")}`,
-                    "quality": "1080p",
-                    "isM3U8": true
-                }
-            ];
-        </script>
     </body>
 </html>

@@ -13,7 +13,7 @@ class Core extends API_1.default {
         this.client = new WebTorrent();
         this.password = "password";
     }
-    async search(query, stringThreshold = 0.5, comparisonThreshold = 0.5) {
+    async search(query, stringThreshold = 0.25, comparisonThreshold = 0.25) {
         const response = [];
         const aniSearch = await this.aniList.search(query);
         const nyaa = new Scraper_1.default();
@@ -58,6 +58,38 @@ class Core extends API_1.default {
     }
     getTorrent(magnet) {
         return this.client.get(magnet);
+    }
+    listTorrents() {
+        const torrents = this.client.torrents;
+        const results = [];
+        torrents.map((element, index) => {
+            const announce = element.announce;
+            const path = element.path;
+            const files = element.files;
+            const fileResult = [];
+            files.map((file, index) => {
+                const name = file.name;
+                const path = file.path;
+                const length = file.length;
+                fileResult.push({
+                    name: name,
+                    path: path,
+                    length: length
+                });
+            });
+            const totalLength = element.length;
+            const name = element.name;
+            const infoHash = element.infoHash;
+            results.push({
+                name: name,
+                hash: infoHash,
+                length: totalLength,
+                announcers: announce,
+                file_path: path,
+                files: fileResult
+            });
+        });
+        return results;
     }
     async addTorrent(magnet) {
         return new Promise((resolve, reject) => {
