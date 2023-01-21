@@ -1,0 +1,30 @@
+{
+    "devDependencies": {
+        "@types/node": "^18.11.13",
+        "typescript": "^4.9.4"
+    },
+    "name": "nimus",
+    "description": "A lightweight anime storage solution inspired by Sumin.",
+    "version": "1.0.0",
+    "main": "./built/Core.js",
+    "scripts": {
+        "test": "node ./test.js",
+        "build": "tsc --build",
+        "clean": "tsc --build --clean"
+    },
+    "repository": {
+        "type": "git",
+        "url": "git+https://github.com/Eltik/nimuS.git"
+    },
+    "author": "eltik",
+    "license": "ISC",
+    "bugs": {
+        "url": "https://github.com/Eltik/nimuS/issues"
+    },
+    "homepage": "https://github.com/Eltik/nimuS#readme",
+    "dependencies": {
+        "anisync-core": "^1.0.0",
+        "axios": "^1.2.3",
+        "cheerio": "^1.0.0-rc.12"
+    }
+}
