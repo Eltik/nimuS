@@ -109,6 +109,7 @@ Promise.all(fastifyPlugins).then(() => {
     fastify.listen({ port: config_1.config.web_server.port }, (err, address) => {
         if (err)
             throw err;
+        core.runLoop();
         console.log(`Listening to ${address}.`);
     });
 });

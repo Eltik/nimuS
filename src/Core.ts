@@ -2,14 +2,17 @@ import { sync, Media } from "anisync-core";
 import AniList, { Type } from "./AniList";
 import * as WebTorrent from "webtorrent";
 import * as CryptoJS from "crypto-js";
+import { Database } from "sqlite3";
 
 import API from "./API";
 import Scraper from "./Scraper";
+import { config } from "./config";
 
 export default class Core extends API {
     private aniList = new AniList(Type.ANIME);
     private client:WebTorrent = new WebTorrent();
     private password:string = "password";
+    private db = new Database(config.torrent.db);
 
     constructor() {
         super();
@@ -102,10 +105,26 @@ export default class Core extends API {
         return results;
     }
 
-    public async addTorrent(magnet:string) {
+    public async addTorrent(magnet:string, path?:string) {
+        path = path ? path : config.torrent.path;
         return new Promise((resolve, reject) => {
-            this.client.add(magnet, (torrent) => {
+            this.client.add(magnet, { path: path }, (torrent) => {
+                this.cacheTorrent(magnet, path);
                 resolve(torrent);
+            });
+        })
+    }
+
+    public async removeTorrent(magnet:string) {
+        return new Promise((resolve, reject) => {
+            this.client.remove(magnet, async(err) => {
+                if (err) {
+                    reject(err);
+                } else {
+                    const torrent = await this.getCachedTorrent(magnet);
+                    this.removeCachedTorrent(torrent.id);
+                    resolve(true);
+                }
             });
         })
     }
@@ -171,6 +190,87 @@ export default class Core extends API {
         const decodedString = Buffer.from(decrypted.toString(CryptoJS.enc.Utf8), "base64");
         return decodedString.toString();
     }
+
+    private async cacheTorrent(magnet:string, path:string) {
+        const db = this.db;
+
+        const possible = await this.getCachedTorrent(magnet);
+        if (possible) {
+            return;
+        }
+
+        const id = this.getRandomInt(10);
+        const lastCached = Date.now();
+        const query = `INSERT INTO storage (id, path, lastCached, magnet) VALUES (?, ?, ?, ?)`;
+        const values = [id, path, lastCached, magnet];
+
+        return new Promise((resolve, reject) => {
+            db.run(query, values, function(err) {
+                if (err) {
+                    reject(err);
+                }
+                // TEMP
+                console.log("Cached torrent successfully.");
+        
+                resolve(true);
+            });
+        })
+    }
+
+    private async getCachedTorrent(magnet:string):Promise<any> {
+        const db = this.db;
+        return new Promise((resolve, reject) => {
+            db.get("SELECT * FROM storage WHERE magnet=?", [magnet], (err, rows) => {
+                if (err) {
+                    reject(err);
+                }
+                resolve(rows);
+            });
+        })
+    }
+
+    private async removeCachedTorrent(id:string) {
+        const db = this.db;
+
+        const stmt = db.prepare(`DELETE FROM storage WHERE id = ?`);
+        stmt.run(id);
+        stmt.finalize();
+
+        // TEMP
+        console.log("Removed torrent successfully.");
+        return true;
+    }
+
+    public async runLoop() {
+        setInterval(() => {
+            const db = this.db;
+            const query = `SELECT * FROM storage`;
+            db.all(query, async(err, rows) => {
+                if (err) {
+                    throw err;
+                }
+                for (let i = 0; i < rows.length; i++) {
+                    const row = rows[i];
+                    const magnet = row.magnet;
+                    const path = row.path;
+                    if (!this.getTorrent(magnet)) {
+                        // We want to add all torrents first, then remove them if necessary.
+                        await this.addTorrent(magnet, path);
+                    }
+                }
+
+                for (let i = 0; i < rows.length; i++) {
+                    const row = rows[i];
+                    const lastCached = row.lastCached;
+                    const now = Date.now();
+                    const magnet = row.magnet;
+                    if (now - lastCached > config.torrent.cache_timeout) {
+                        await this.removeTorrent(magnet);
+                    }
+                }
+            });
+        }, config.torrent.loop_interval)
+    }
 }
 
 interface SearchResponse {
@@ -201,3 +301,5 @@ interface SearchResponse {
         torrent: string;
     }
 }
+
+// CREATE TABLE IF NOT EXISTS storage (id INTEGER PRIMARY KEY, path longtext, lastCached bigint, magnet longtext);
