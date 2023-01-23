@@ -48,10 +48,15 @@
                 <h1>Torrent List</h1>
                 <div class="torrent_list">
                     <!-- All Added Torrents Here -->
+                    <h2>Coming soon</h2>
                 </div>
             </div>
             <div class="information">
+                <h1>Information</h1>
                 <!-- Selected Stuff, Video Streaming, etc. -->
+                <div class="selected">
+                    
+                </div>
             </div>
         </div>
         <script>
@@ -129,10 +134,11 @@
                         const nyaa = element.nyaa;
 
                         const magnet = await encrypt(nyaa.magnet);
+                        const aniListData = await encrypt(JSON.stringify(aniList.data));
 
                         const toAppend = `
                             <div class="result_wrapper">
-                                <a href="#" onclick="getInfo('${magnet}')" class="result">
+                                <a href="#" onclick="getInfo('${magnet}', '${aniListData}')" class="result">
                                     <img src="${aniList.data.coverImage.extraLarge}" />
                                     <div class="info">
                                         <h3>${nyaa.title}</h3>
@@ -150,10 +156,60 @@
                 results.innerHTML = allHTML;
             }
 
-            async function getInfo(magnet) {
-                magnet = await decrypt(magnet);
-                console.log(magnet);
-                alert("Not finished yet.");
+            async function getInfo(magnet, aniList) {
+                aniList = await decrypt(aniList);
+                aniList = JSON.parse(aniList);
+                const selected = document.querySelector(".selected");
+                selected.innerHTML = "";
+                loadSkeleton(".selected", true);
+
+                const req = await fetch(`/files`, { body: JSON.stringify({ magnet: magnet }), method: "POST", headers: { "Content-Type": "application/json" }});
+                const data = await req.json();
+                unloadSkeleton(".selected", ".skeleton_div");
+                console.log(data);
+                
+                const id = aniList.id;
+                const malId = aniList.idMal;
+                const titleEn = aniList.title.english;
+                const titleRom = aniList.title.romaji;
+                const titleNat = aniList.title.native;
+                const genres = aniList.genres;
+                const coverImage = aniList.coverImage.extraLarge;
+                const bannerImage = aniList.bannerImage;
+
+                const links = [];
+                for (let i = 0; i < data.length; i++) {
+                    const encryptedName = await encrypt(data[i].name);
+                    links.push(`<li><a href="/stream?magnet=${magnet}&file=${encryptedName}" target="_blank">${data[i].name}</a></li>`);
+                }
+
+                const toAppend = `
+                    <div class="info_wrapper">
+                        <div class="info">
+                            <div class="cover">
+                                <img src="${coverImage}" />
+                            </div>
+                            <div class="info">
+                                <h3>${titleRom}</h3>
+                                <p>${titleEn}</p>
+                                <p>${titleNat}</p>
+                                <p>${genres.join(", ")}</p>
+                            </div>
+                        </div>
+                        <div class="files">
+                            <h3>Files</h3>
+                            <div class="file_list">
+                                <ul>
+                                    ${links.map((element, index) => {
+                                        return element;
+                                    }).join("")}
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                `;
+
+                selected.innerHTML = toAppend;
             }
         </script>
     </body>
