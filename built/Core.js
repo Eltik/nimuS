@@ -97,8 +97,10 @@ class Core extends API_1.default {
     async addTorrent(magnet, path) {
         path = path ? path : config_1.config.torrent.path;
         return new Promise((resolve, reject) => {
-            this.client.add(magnet, { path: path }, (torrent) => {
-                this.cacheTorrent(magnet, path);
+            this.client.add(magnet, { path: path }, async (torrent) => {
+                if (config_1.config.torrent.cache) {
+                    await this.cacheTorrent(magnet, path);
+                }
                 resolve(torrent);
             });
         });
@@ -117,7 +119,14 @@ class Core extends API_1.default {
             });
         });
     }
-    async streamTorrent(magnet, range, fileName) {
+    /**
+     * @deprecated
+     * @param magnet
+     * @param range
+     * @param fileName
+     * @returns Buffer
+     */
+    async streamTorrentOLD(magnet, range, fileName) {
         return new Promise(async (resolve, reject) => {
             let torrent = this.client.get(magnet);
             if (!torrent) {
@@ -153,6 +162,32 @@ class Core extends API_1.default {
             stream.on("end", () => {
                 resolve(buffer);
             });
+        });
+    }
+    async streamTorrent(magnet, fileName, res) {
+        let torrent = this.client.get(magnet);
+        if (!torrent) {
+            torrent = await this.addTorrent(magnet);
+        }
+        if (!torrent.files) {
+            throw new Error("No files found.");
+        }
+        let file = null;
+        for (let i = 0; i < torrent.files.length; i++) {
+            if (torrent.files[i].name == fileName) {
+                file = torrent.files[i];
+            }
+        }
+        if (!file) {
+            throw new Error("File not found.");
+        }
+        const stream = file.createReadStream();
+        res.header('Accept-Ranges', 'bytes');
+        res.header('Content-Type', 'video/mp4');
+        res.send(stream);
+        stream.on("error", function (err) {
+            // New error handling system needs to be implemented
+            console.log(err);
         });
     }
     encrypt(url) {

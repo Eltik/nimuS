@@ -313,7 +313,8 @@
                         document.querySelectorAll("video").forEach((element) => {
                             element.remove();
                         });
-                        createVideo(magnet, element.name);
+                        //createVideo(magnet, element.name);
+                        createHLS(magnet, element.name);
                     }
                     item.append(anchor);
 
@@ -328,7 +329,6 @@
 
                 const req = await fetch("/list");
                 const data = await req.json();
-                console.log(data);
 
                 button.disabled = false;
                 

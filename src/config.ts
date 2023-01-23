@@ -6,6 +6,7 @@ export var config = {
         cors: "*"
     },
     torrent: {
+        cache: false, // Whether to cache torrents or not
         path: "/tmp/webtorrent", // Torrent storage path
         db: join(__dirname, "../db.db"), // Path to SQLite database
         loop_interval: 1000, // How often to check for torrents to remove in milliseconds

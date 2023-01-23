@@ -3,10 +3,12 @@ import AniList, { Type } from "./AniList";
 import * as WebTorrent from "webtorrent";
 import * as CryptoJS from "crypto-js";
 import { Database } from "sqlite3";
+import { ReadStream, createReadStream } from "node:fs";
 
 import API from "./API";
 import Scraper from "./Scraper";
 import { config } from "./config";
+import { FastifyReply } from "fastify";
 
 export default class Core extends API {
     private aniList = new AniList(Type.ANIME);
@@ -108,8 +110,10 @@ export default class Core extends API {
     public async addTorrent(magnet:string, path?:string) {
         path = path ? path : config.torrent.path;
         return new Promise((resolve, reject) => {
-            this.client.add(magnet, { path: path }, (torrent) => {
-                this.cacheTorrent(magnet, path);
+            this.client.add(magnet, { path: path }, async(torrent) => {
+                if (config.torrent.cache) {
+                    await this.cacheTorrent(magnet, path);
+                }
                 resolve(torrent);
             });
         })
@@ -129,7 +133,14 @@ export default class Core extends API {
         })
     }
 
-    public async streamTorrent(magnet:string, range:string, fileName:string):Promise<Buffer> {
+    /**
+     * @deprecated
+     * @param magnet 
+     * @param range 
+     * @param fileName 
+     * @returns Buffer
+     */
+    public async streamTorrentOLD(magnet:string, range:string, fileName:string):Promise<Buffer> {
         return new Promise(async(resolve, reject) => {
             let torrent = this.client.get(magnet);
             if (!torrent) {
@@ -172,6 +183,36 @@ export default class Core extends API {
             stream.on("end", () => {
                 resolve(buffer);
             });
+        });
+    }
+
+    public async streamTorrent(magnet:string, fileName:string, res:FastifyReply) {
+        let torrent = this.client.get(magnet);
+        if (!torrent) {
+            torrent = await this.addTorrent(magnet);
+        }
+        if (!torrent.files) {
+            throw new Error("No files found.");
+        }
+        let file:any = null;
+        for (let i = 0; i < torrent.files.length; i++) {
+            if (torrent.files[i].name == fileName) {
+                file = torrent.files[i];
+            }
+        }
+
+        if (!file) {
+            throw new Error("File not found.");
+        }
+        
+        const stream = file.createReadStream();
+        res.header('Accept-Ranges', 'bytes');
+        res.header('Content-Type', 'video/mp4');
+        res.send(stream);
+
+        stream.on("error", function (err) {
+            // New error handling system needs to be implemented
+            console.log(err);
         });
     }
 

@@ -2,11 +2,23 @@
 Object.defineProperty(exports, "__esModule", { value: true });
 const API_1 = require("./API");
 const cheerio_1 = require("cheerio");
+/**
+ * @class Scraper
+ * @extends API
+ * @description Scraper class for scraping Nyaa
+ */
 class Scraper extends API_1.default {
     constructor() {
         super();
         this.baseURL = "https://nyaa.si";
     }
+    /**
+     * @function search
+     * @param query
+     * @param page
+     * @returns Promise<Array<SearchResponse>>
+     * @description Search for torrents on Nyaa
+     */
     async search(query, page = 1) {
         const req = await this.fetch(`${this.baseURL}/?f=0&c=0_0&q=${query}&s=seeders&o=desc&p=${page}`).catch((err) => {
             console.error(err);
@@ -40,6 +52,13 @@ class Scraper extends API_1.default {
         }
         return data;
     }
+    /**
+     * @function parseTitle
+     * @param toParse
+     * @returns string
+     * @description Parse the title of the torrent
+     * @private
+    */
     parseTitle(toParse) {
         let title = toParse;
         if (title.startsWith("[") && title.includes("]")) {

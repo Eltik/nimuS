@@ -1,6 +1,11 @@
 import API from "./API";
 import { load } from "cheerio";
 
+/**
+ * @class Scraper
+ * @extends API
+ * @description Scraper class for scraping Nyaa
+ */
 export default class Scraper extends API {
     private baseURL = "https://nyaa.si";
 
@@ -8,6 +13,13 @@ export default class Scraper extends API {
         super();
     }
 
+    /**
+     * @function search
+     * @param query 
+     * @param page 
+     * @returns Promise<Array<SearchResponse>>
+     * @description Search for torrents on Nyaa
+     */
     public async search(query: string, page: number = 1): Promise<Array<SearchResponse>> {
         const req = await this.fetch(`${this.baseURL}/?f=0&c=0_0&q=${query}&s=seeders&o=desc&p=${page}`).catch((err) => {
             console.error(err);
@@ -43,6 +55,13 @@ export default class Scraper extends API {
         return data;
     }
 
+    /**
+     * @function parseTitle
+     * @param toParse
+     * @returns string
+     * @description Parse the title of the torrent
+     * @private
+    */
     private parseTitle(toParse:string):string {
         let title:string = toParse;
         if (title.startsWith("[") && title.includes("]")) {

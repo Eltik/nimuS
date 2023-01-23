@@ -33,16 +33,21 @@ fastify.get("/", async (req, res) => {
 });
 fastify.get("/stream", async (req, res) => {
     const magnet = core.decrypt(req.query["magnet"]);
-    const range = req.headers.range ? req.headers.range : "bytes=0-50, 100-150";
+    let range = req.headers.range;
     if (!range) {
+        /*
         res.type("application/json").code(416);
         return { error: "Wrong range" };
+        */
+        range = "bytes=0-";
     }
-    const torStream = await core.streamTorrent(magnet, range, core.decrypt(req.query["file"])).catch((err) => {
-        res.type("application/json").code(500);
-        return { error: err };
+    return core.streamTorrent(magnet, core.decrypt(req.query["file"]), res);
+    /*
+    const stream = await core.streamTorrentOLD(magnet, range, core.decrypt(req.query["file"])).catch((err) => {
+        console.error(err);
     });
-    return torStream;
+    res.send(stream);
+    */
 });
 fastify.get("/search/:query", async (req, res) => {
     const query = req.params["query"];

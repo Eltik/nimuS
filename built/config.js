@@ -8,6 +8,7 @@ exports.config = {
         cors: "*"
     },
     torrent: {
+        cache: false,
         path: "/tmp/webtorrent",
         db: (0, path_1.join)(__dirname, "../db.db"),
         loop_interval: 1000,
