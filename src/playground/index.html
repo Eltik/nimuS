@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <meta charset="utf-8">
+        <title>nimuS Playground</title>
+        <link rel="stylesheet" href="/playground/styles/index" />
+        <link rel="stylesheet" href="/playground/styles/skeleton" />
+        <script src="/playground/scripts/cryptojs"></script>
+        <script src="/playground/scripts/skeleton"></script>
+        <script src="/playground/scripts/anime"></script>
+
+        <meta charset="utf-8">
+        <meta name="title" content="nimuS Playground" />
+        <meta name="description" content="Stream anime shows with ease." />
+
+        <meta property="og:type" content="website" />
+        <!--<meta property="og:url" content="https://nimus.moe" />-->
+        <meta property="og:title" content="nimuS Playground" />
+        <meta property="og:description" content="Stream anime shows with ease." />
+
+        <meta property="twitter:card" content="summary_large_image" />
+        <!--<meta property="twitter:url" content="https://nimus.moe" />-->
+        <meta property="twitter:title" content="nimuS Playground"/>
+        <meta property="twitter:description" content="Stream anime shows with ease." />
+    </head>
+    <body>
+        <div class="header">
+            <div class="typed">
+                <h1>nimuS</h1>
+            </div>
+            <h2>A lightweight anime storage solution inspired by <a href="https://sumin.moe" target="_blank">Sumin</a>.</h2>
+        </div>
+
+        <div class="nimus_content">
+            <div class="search_wrapper">
+                <div class="search">
+                    <input type="text" placeholder="Search for anime..." class="search_input" />
+                    <button type="button" onclick="search()">Search</button>
+                </div>
+            </div>
+            <div class="results">
+
+            </div>
+        </div>
+        <script>
+            async function search() {
+                const input = document.querySelector(".search_input");
+                document.querySelector(".search button").disabled = true;
+
+                const req = await fetch(`/search`, { body: JSON.stringify({ query: input.value }), method: "POST", headers: { "Content-Type": "application/json" }});
+                const data = await req.json();
+
+                document.querySelector(".search button").disabled = false;
+
+                data.map((element, index) => {
+                    const aniList = element.anilist;
+                    const nyaa = element.nyaa;
+                })
+            }
+        </script>
+    </body>
+</html>

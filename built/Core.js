@@ -5,6 +5,8 @@ const AniList_1 = require("./AniList");
 const WebTorrent = require("webtorrent");
 const CryptoJS = require("crypto-js");
 const sqlite3_1 = require("sqlite3");
+const colors = require("colors");
+const gradient = require("gradient-string");
 const API_1 = require("./API");
 const Scraper_1 = require("./Scraper");
 const config_1 = require("./config");
@@ -219,8 +221,7 @@ class Core extends API_1.default {
                 if (err) {
                     reject(err);
                 }
-                // TEMP
-                console.log("Cached torrent successfully.");
+                console.log(colors.green(`Cached torrent ${magnet} to ${path}.`));
                 resolve(true);
             });
         });
@@ -241,9 +242,25 @@ class Core extends API_1.default {
         const stmt = db.prepare(`DELETE FROM storage WHERE id = ?`);
         stmt.run(id);
         stmt.finalize();
-        // TEMP
-        console.log("Removed torrent successfully.");
+        console.log(colors.red(`Removed torrent ${id} from cache.`));
         return true;
+    }
+    title() {
+        const title = `        _            ____
+        ___  (_)_ _  __ __/ __/
+       / _ \/ /  ' \/ // /\ \  
+      /_//_/_/_/_/_/\_,_/___/  
+                               `;
+        const poimandresTheme = {
+            blue: "#add7ff",
+            cyan: "#89ddff",
+            green: "#5de4c7",
+            magenta: "#fae4fc",
+            red: "#d0679d",
+            yellow: "#fffac2",
+        };
+        const titleGradient = gradient(Object.values(poimandresTheme));
+        return titleGradient.multiline(title);
     }
     async runLoop() {
         setInterval(() => {

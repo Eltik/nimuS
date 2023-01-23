@@ -5,6 +5,7 @@ import { config } from "./config";
 import Core from "./Core";
 import { createReadStream } from "fs";
 import { join } from "path";
+import * as colors from "colors";
 
 const core = new Core();
 
@@ -40,17 +41,19 @@ fastify.get("/", async(req, res) => {
 fastify.get("/stream", async(req, res) => {
     const magnet = core.decrypt(req.query["magnet"]);
 
+    // Range isn't working at the moment.
+    /*
     let range = req.headers.range;
 
     if (!range) {
-        /*
         res.type("application/json").code(416);
         return { error: "Wrong range" };
-        */
-        range = "bytes=0-";
     }
+    */
 
     return core.streamTorrent(magnet, core.decrypt(req.query["file"]), res);
+
+    // This is for streaming buffers, or streaming when the file is mostly/completely downloaded.
     /*
     const stream = await core.streamTorrentOLD(magnet, range, core.decrypt(req.query["file"])).catch((err) => {
         console.error(err);
@@ -117,15 +120,39 @@ fastify.post("/list", async(req, res) => {
     return files;
 });
 
-// For testing purposes
-fastify.get("/test", async(req, res) => {
-    const stream = createReadStream(join(__dirname, "../src/testing/index.html"), "utf-8");
+/* Playground */
+fastify.get("/playground", async(req, res) => {
+    const stream = createReadStream(join(__dirname, "../src/playground/index.html"), "utf-8");
     res.type("text/html").code(200);
     return stream;
 })
 
-fastify.get("/cryptojs", async(req, res) => {
-    const stream = createReadStream(join(__dirname, "../src/testing/libraries/cryptojs.min.js"), "utf-8");
+fastify.get("/playground/styles/index", async(req, res) => {
+    const stream = createReadStream(join(__dirname, "../src/playground/styles/index.css"), "utf-8");
+    res.type("text/css").code(200);
+    return stream;
+})
+
+fastify.get("/playground/styles/skeleton", async(req, res) => {
+    const stream = createReadStream(join(__dirname, "../src/playground/styles/skeleton.css"), "utf-8");
+    res.type("text/css").code(200);
+    return stream;
+})
+
+fastify.get("/playground/scripts/skeleton", async(req, res) => {
+    const stream = createReadStream(join(__dirname, "../src/playground/scripts/skeleton.min.js"), "utf-8");
+    res.type("text/javascript").code(200);
+    return stream;
+})
+
+fastify.get("/playground/scripts/cryptojs", async(req, res) => {
+    const stream = createReadStream(join(__dirname, "../src/playground/scripts/cryptojs.min.js"), "utf-8");
+    res.type("text/javascript").code(200);
+    return stream;
+})
+
+fastify.get("/playground/scripts/anime", async(req, res) => {
+    const stream = createReadStream(join(__dirname, "../src/playground/scripts/anime.min.js"), "utf-8");
     res.type("text/javascript").code(200);
     return stream;
 })
@@ -134,6 +161,7 @@ Promise.all(fastifyPlugins).then(() => {
     fastify.listen({ port: config.web_server.port }, (err, address) => {
         if (err) throw err;
         core.runLoop();
-        console.log(`Listening to ${address}.`);
+        console.log(core.title());
+        console.log(colors.green(`Server listening on ${address}`));
     })
 })

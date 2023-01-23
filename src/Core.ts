@@ -3,7 +3,8 @@ import AniList, { Type } from "./AniList";
 import * as WebTorrent from "webtorrent";
 import * as CryptoJS from "crypto-js";
 import { Database } from "sqlite3";
-import { ReadStream, createReadStream } from "node:fs";
+import * as colors from "colors";
+import * as gradient from "gradient-string";
 
 import API from "./API";
 import Scraper from "./Scraper";
@@ -250,9 +251,7 @@ export default class Core extends API {
                 if (err) {
                     reject(err);
                 }
-                // TEMP
-                console.log("Cached torrent successfully.");
-        
+                console.log(colors.green(`Cached torrent ${magnet} to ${path}.`));
                 resolve(true);
             });
         })
@@ -277,9 +276,26 @@ export default class Core extends API {
         stmt.run(id);
         stmt.finalize();
 
-        // TEMP
-        console.log("Removed torrent successfully.");
+        console.log(colors.red(`Removed torrent ${id} from cache.`));
         return true;
+    }
+
+    public title():string {
+        const title = `        _            ____
+        ___  (_)_ _  __ __/ __/
+       / _ \/ /  ' \/ // /\ \  
+      /_//_/_/_/_/_/\_,_/___/  
+                               `;
+        const poimandresTheme = {
+            blue: "#add7ff",
+            cyan: "#89ddff",
+            green: "#5de4c7",
+            magenta: "#fae4fc",
+            red: "#d0679d",
+            yellow: "#fffac2",
+        };
+        const titleGradient = gradient(Object.values(poimandresTheme));
+        return titleGradient.multiline(title);
     }
 
     public async runLoop() {
