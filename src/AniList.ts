@@ -16,6 +16,13 @@ export default class AniList extends API {
         english
         native
     }
+    coverImage {
+        extraLarge
+        large
+        medium
+    }
+    bannerImage
+    genres
     `;
 
     constructor(type:Type, format?:Format) {

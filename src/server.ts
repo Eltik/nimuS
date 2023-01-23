@@ -38,6 +38,24 @@ fastify.get("/", async(req, res) => {
     return "Welcome to nimuS.";
 })
 
+fastify.post("/encrypt", async(req, res) => {
+    const query = req.body["string"];
+    if (!query) {
+        return { error: "No string provider." };
+    }
+
+    return { data: core.encrypt(query) };
+})
+
+fastify.post("/decrypt", async(req, res) => {
+    const query = req.body["string"];
+    if (!query) {
+        return { error: "No string provider." };
+    }
+
+    return { data: core.decrypt(query) };
+})
+
 fastify.get("/stream", async(req, res) => {
     const magnet = core.decrypt(req.query["magnet"]);
 

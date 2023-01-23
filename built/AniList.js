@@ -18,6 +18,13 @@ class AniList extends API_1.default {
         english
         native
     }
+    coverImage {
+        extraLarge
+        large
+        medium
+    }
+    bannerImage
+    genres
     `;
         this.type = type ? type : Type.ANIME;
         this.format = format ? format : Format.TV;

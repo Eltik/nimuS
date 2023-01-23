@@ -3,6 +3,8 @@
     <head>
         <meta charset="utf-8">
         <title>nimuS Playground</title>
+        <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery-cookie/1.4.1/jquery.cookie.min.js"></script>
         <link rel="stylesheet" href="/playground/styles/index" />
         <link rel="stylesheet" href="/playground/styles/skeleton" />
         <script src="/playground/scripts/cryptojs"></script>
@@ -32,30 +34,126 @@
         </div>
 
         <div class="nimus_content">
-            <div class="search_wrapper">
-                <div class="search">
-                    <input type="text" placeholder="Search for anime..." class="search_input" />
-                    <button type="button" onclick="search()">Search</button>
+            <div class="search_content">
+                <div class="search_wrapper">
+                    <div class="search">
+                        <input type="text" placeholder="Search for anime..." class="search_input" />
+                        <button type="button" onclick="search()">Search</button>
+                    </div>
+                </div>
+                <div class="results">
                 </div>
             </div>
-            <div class="results">
-
+            <div class="torrents">
+                <h1>Torrent List</h1>
+                <div class="torrent_list">
+                    <!-- All Added Torrents Here -->
+                </div>
+            </div>
+            <div class="information">
+                <!-- Selected Stuff, Video Streaming, etc. -->
             </div>
         </div>
         <script>
+            function loadSkeleton(selector, createDOM) {
+                if (createDOM) {
+                    for (let i = 0; i < 5; i++) {
+                        const skeletonDiv = document.createElement("div");
+                        skeletonDiv.className = "skeleton_div";
+                        const skeletonResult = document.createElement("div");
+                        skeletonResult.className = "skeleton_result";
+                        skeletonDiv.append(skeletonResult);
+                        $(selector).append(skeletonDiv);
+                    }
+                    $(selector).scheletrone();
+                } else {
+                    $(selector).scheletrone();
+                }
+            }
+
+            function unloadSkeleton(selector, subChild) {
+                if (subChild.length > 0) {
+                    const skeletonResults = document.querySelectorAll(subChild);
+                    for (let i = 0; i < skeletonResults.length; i++) {
+                        skeletonResults[i].remove();
+                    }
+                }
+            }
+
+            async function encrypt(string) {
+                const req = await fetch("/encrypt", { body: JSON.stringify({ string: string }), method: "POST", headers: { "Content-Type": "application/json" }});
+                const data = await req.json();
+                return data.data;
+            }
+
+            async function decrypt(string) {
+                const req = await fetch("/decrypt", { body: JSON.stringify({ string: string }), method: "POST", headers: { "Content-Type": "application/json" }});
+                const data = await req.json();
+                return data.data;
+            }
+
             async function search() {
                 const input = document.querySelector(".search_input");
                 document.querySelector(".search button").disabled = true;
+                if (!input.value || input.value.length === 0) {
+                    alert("You must input a search query.");
+                    document.querySelector(".search button").disabled = false;
+                    return;
+                }
 
-                const req = await fetch(`/search`, { body: JSON.stringify({ query: input.value }), method: "POST", headers: { "Content-Type": "application/json" }});
+                loadSkeleton(".results", true);
+
+                const req = await fetch(`/search`, { body: JSON.stringify({ query: input.value }), method: "POST", headers: { "Content-Type": "application/json" }}).catch((err) => {
+                    alert(err.message);
+                });
                 const data = await req.json();
+                console.log(data);
+
+                if (data.error) {
+                    alert(data.error);
+                    document.querySelector(".search button").disabled = false;
+                    return;
+                }
 
                 document.querySelector(".search button").disabled = false;
+                
+                const results = document.querySelector(".results");
 
+                unloadSkeleton(".results", ".skeleton_result");
+
+                let allHTML = "";
+                const promises = [];
                 data.map((element, index) => {
-                    const aniList = element.anilist;
-                    const nyaa = element.nyaa;
+                    const promise = new Promise(async(resolve, reject) => {
+                        const aniList = element.anilist;
+                        const nyaa = element.nyaa;
+
+                        const magnet = await encrypt(nyaa.magnet);
+
+                        const toAppend = `
+                            <div class="result_wrapper">
+                                <a href="#" onclick="getInfo('${magnet}')" class="result">
+                                    <img src="${aniList.data.coverImage.extraLarge}" />
+                                    <div class="info">
+                                        <h3>${nyaa.title}</h3>
+                                        <p>${aniList.data.title.romaji}</p>
+                                    </div>
+                                </a>
+                            </div>
+                        `;
+                        allHTML += toAppend;
+                        resolve();
+                    })
+                    promises.push(promise);
                 })
+                await Promise.all(promises);
+                results.innerHTML = allHTML;
+            }
+
+            async function getInfo(magnet) {
+                magnet = await decrypt(magnet);
+                console.log(magnet);
+                alert("Not finished yet.");
             }
         </script>
     </body>
